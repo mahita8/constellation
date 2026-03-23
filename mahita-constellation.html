@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mahita Maddipati — Constellation of Self</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #04050f;
+    color: #e8e4d9;
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  #starfield {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem 4rem;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 3.5rem;
+  }
+
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 400;
+    color: #f5f0e8;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  .header h1 em {
+    font-style: italic;
+    color: #c9b8f0;
+  }
+
+  .gemini-bio {
+    margin-top: 1rem;
+    font-size: 0.78rem;
+    line-height: 1.9;
+    color: #7a7590;
+    font-style: italic;
+    min-height: 2.8rem;
+    letter-spacing: 0.04em;
+    transition: color 0.6s ease;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .gemini-bio.loaded { color: #9b97b0; }
+
+  .gemini-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 0.6rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #3d3a55;
+  }
+
+  .gemini-badge span {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: #8dd8c8;
+    opacity: 0.5;
+  }
+
+  .hint {
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    color: #3d3a55;
+    text-transform: uppercase;
+    margin-top: 0.4rem;
+  }
+
+  .constellation-wrap {
+    width: 100%;
+    max-width: 700px;
+    position: relative;
+  }
+
+  svg#constellation {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .star-group { cursor: pointer; }
+
+  .star-group .pulse-ring {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: none;
+  }
+
+  .star-group.active .pulse-ring {
+    animation: pulse 1.8s ease-out infinite;
+  }
+
+  @keyframes pulse {
+    0%   { r: 10; opacity: 0.6; }
+    100% { r: 28; opacity: 0; }
+  }
+
+  .star-group .core { transition: r 0.2s ease; }
+  .star-group:hover .core { r: 10; }
+
+  .star-label {
+    pointer-events: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    fill: #7a7590;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: fill 0.2s;
+  }
+
+  .star-group.active .star-label,
+  .star-group:hover .star-label { fill: #c9b8f0; }
+
+  .connector-line {
+    stroke: #1e1b35;
+    stroke-width: 0.8;
+    fill: none;
+    stroke-dasharray: 3 5;
+  }
+
+  .info-panel {
+    width: 100%;
+    max-width: 700px;
+    margin-top: 2.5rem;
+    min-height: 160px;
+    border: 0.5px solid #2a2640;
+    border-radius: 12px;
+    padding: 2rem 2.5rem;
+    background: rgba(255,255,255,0.025);
+    transition: opacity 0.4s ease, border-color 0.4s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .info-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #c9b8f0 40%, #8dd8c8 80%, transparent);
+    opacity: 0.4;
+  }
+
+  .panel-glyph {
+    font-size: 1.4rem;
+    margin-bottom: 0.6rem;
+    display: block;
+  }
+
+  .panel-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.25rem;
+    color: #f5f0e8;
+    margin-bottom: 0.6rem;
+  }
+
+  .panel-body {
+    font-size: 0.78rem;
+    line-height: 1.9;
+    color: #9b97b0;
+    max-width: 540px;
+    min-height: 3.5rem;
+  }
+
+  .panel-body.streaming { color: #b0acbf; }
+
+  .panel-tag {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #c9b8f0;
+    border: 0.5px solid #3a3560;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .default-hint {
+    font-size: 0.72rem;
+    color: #3d3a55;
+    text-align: center;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2.5rem 0;
+  }
+
+  .loading-dots::after {
+    content: '';
+    animation: dots 1.2s steps(3, end) infinite;
+  }
+
+  @keyframes dots {
+    0%   { content: ''; }
+    33%  { content: '.'; }
+    66%  { content: '..'; }
+    100% { content: '...'; }
+  }
+
+  .footer-line {
+    margin-top: 3rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: #2e2b45;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 7px; height: 1em;
+    background: #c9b8f0;
+    opacity: 0.7;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 0.9s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 0.7; }
+    50%       { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- =====================================================
+     CONFIGURATION — paste your Gemini API key below
+     Get one free at: https://aistudio.google.com/apikey
+     ===================================================== -->
+<script>
+  const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+</script>
+
+<canvas id="starfield"></canvas>
+
+<div class="wrapper">
+  <div class="header">
+    <h1>Mahita <em>Maddipati</em></h1>
+    <p class="gemini-bio" id="gemini-bio"><span class="loading-dots">generating</span></p>
+    <p class="gemini-badge"><span></span>written by gemini</p>
+    <p class="hint">select a star &nbsp;·&nbsp; a constellation of self</p>
+  </div>
+
+  <div class="constellation-wrap">
+    <svg id="constellation" viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- connector lines -->
+      <path class="connector-line" d="M155,95 L280,175"/>
+      <path class="connector-line" d="M280,175 L430,130"/>
+      <path class="connector-line" d="M430,130 L545,200"/>
+      <path class="connector-line" d="M280,175 L320,285"/>
+      <path class="connector-line" d="M430,130 L320,285"/>
+      <path class="connector-line" d="M155,95 L95,220"/>
+      <path class="connector-line" d="M95,220 L320,285"/>
+      <path class="connector-line" d="M545,200 L600,310"/>
+      <path class="connector-line" d="M320,285 L600,310"/>
+
+      <!-- Space -->
+      <g class="star-group" id="star-space" onclick="showPanel('space')">
+        <circle class="pulse-ring" cx="155" cy="95" r="10" fill="none" stroke="#c9b8f0" stroke-width="1.2" opacity="0"/>
+        <circle class="core" cx="155" cy="95" r="7" fill="#c9b8f0" filter="url(#glow)" opacity="0.9"/>
+        <circle cx="155" cy="95" r="3" fill="#f5f0e8"/>
+        <text class="star-label" x="155" y="78" text-anchor="middle">Space</text>
+      </g>
+
+      <!-- Code -->
+      <g class="star-group" id="star-code" onclick="showPanel('code')">
+        <circle class="pulse-ring" cx="430" cy="130" r="10" fill="none" stroke="#8dd8c8" stroke-width="1.2" opacity="0"/>
+        <circle class="core" cx="430" cy="130" r="8" fill="#8dd8c8" filter="url(#glow)" opacity="0.9"/>
+        <circle cx="430" cy="130" r="3.5" fill="#f5f0e8"/>
+        <text class="star-label" x="430" y="113" text-anchor="middle">Code</text>
+      </g>
+
+      <!-- Art (brightest, center) -->
+      <g class="star-group" id="star-art" onclick="showPanel('art')">
+        <circle class="pulse-ring" cx="280" cy="175" r="10" fill="none" stroke="#f0c98a" stroke-width="1.5" opacity="0"/>
+        <circle class="core" cx="280" cy="175" r="10" fill="#f0c98a" filter="url(#glow)" opacity="0.95"/>
+        <circle cx="280" cy="175" r="4.5" fill="#fffbe8"/>
+        <text class="star-label" x="280" y="157" text-anchor="middle">Art & Design</text>
+      </g>
+
+      <!-- Culture -->
+      <g class="star-group" id="star-culture" onclick="showPanel('culture')">
+        <circle class="pulse-ring" cx="95" cy="220" r="10" fill="none" stroke="#f0a0a0" stroke-width="1.2" opacity="0"/>
+        <circle class="core" cx="95" cy="220" r="7" fill="#f0a0a0" filter="url(#glow)" opacity="0.9"/>
+        <circle cx="95" cy="220" r="3" fill="#fff0f0"/>
+        <text class="star-label" x="95" y="203" text-anchor="middle">Culture</text>
+      </g>
+
+      <!-- Research -->
+      <g class="star-group" id="star-research" onclick="showPanel('research')">
+        <circle class="pulse-ring" cx="545" cy="200" r="10" fill="none" stroke="#a8d4f5" stroke-width="1.2" opacity="0"/>
+        <circle class="core" cx="545" cy="200" r="7" fill="#a8d4f5" filter="url(#glow)" opacity="0.9"/>
+        <circle cx="545" cy="200" r="3" fill="#f0f8ff"/>
+        <text class="star-label" x="545" y="183" text-anchor="middle">Research</text>
+      </g>
+
+      <!-- Photography -->
+      <g class="star-group" id="star-photo" onclick="showPanel('photo')">
+        <circle class="pulse-ring" cx="320" cy="285" r="10" fill="none" stroke="#b8d4a0" stroke-width="1.2" opacity="0"/>
+        <circle class="core" cx="320" cy="285" r="7" fill="#b8d4a0" filter="url(#glow)" opacity="0.9"/>
+        <circle cx="320" cy="285" r="3" fill="#f4fced"/>
+        <text class="star-label" x="320" y="268" text-anchor="middle">Photography</text>
+      </g>
+
+      <!-- Making -->
+      <g class="star-group" id="star-making" onclick="showPanel('making')">
+        <circle class="pulse-ring" cx="600" cy="310" r="10" fill="none" stroke="#e0b8f0" stroke-width="1.2" opacity="0"/>
+        <circle class="core" cx="600" cy="310" r="7" fill="#e0b8f0" filter="url(#glow)" opacity="0.9"/>
+        <circle cx="600" cy="310" r="3" fill="#faf0ff"/>
+        <text class="star-label" x="600" y="293" text-anchor="middle">Making</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="info-panel" id="info-panel">
+    <p class="default-hint">↑ &nbsp; Select a star to explore</p>
+  </div>
+
+  <p class="footer-line">Generated with Gemini &nbsp;·&nbsp; Mahita Maddipati &nbsp;·&nbsp; 2026</p>
+</div>
+
+<script>
+// ── Star metadata (prompts + display config) ──────────────────────────────────
+const stars = {
+  space: {
+    glyph: '✦',
+    title: 'Space & Stars',
+    color: '#c9b8f0',
+    tag: 'D3.js · Gaia ESA · data as art',
+    prompt: `You are writing a 2–3 sentence first-person micro-story for a creative portfolio. 
+Write in the voice of Mahita Maddipati, a creative technologist and software engineer. 
+Topic: her love of space and astronomy, specifically that she built a D3.js interactive stellar distribution visualization using the Gaia ESA dataset — not for a class, purely out of curiosity and love for the data. 
+Tone: poetic, personal, slightly wonder-struck. No bullet points. No hashtags. No em-dashes. End with a single resonant observation.`
+  },
+  code: {
+    glyph: '⟨/⟩',
+    title: 'Code as material',
+    color: '#8dd8c8',
+    tag: 'React · TypeScript · Python · FastAPI',
+    prompt: `You are writing a 2–3 sentence first-person micro-story for a creative portfolio.
+Write in the voice of Mahita Maddipati, a software engineer who thinks of code as a creative material like paint or clay, not just a tool.
+Her stack is React, TypeScript, Python, and FastAPI. She started as a visual/creative person and came to code later.
+Tone: confident, creative, a little philosophical. No bullet points. No hashtags. No em-dashes. End with a single resonant observation about why she codes.`
+  },
+  art: {
+    glyph: '◈',
+    title: 'Art & Design',
+    color: '#f0c98a',
+    tag: 'Procreate · Figma · UX · motion',
+    prompt: `You are writing a 2–3 sentence first-person micro-story for a creative portfolio.
+Write in the voice of Mahita Maddipati. She hand-draws and animates all her design assets in Procreate before writing a single line of code. She holds three Google UX Design Professional Certificates and uses Figma daily.
+Tone: warm, artistic, grounded in craft. No bullet points. No hashtags. No em-dashes. End with a single line about how art and engineering are the same impulse.`
+  },
+  culture: {
+    glyph: '◎',
+    title: 'South Indian roots',
+    color: '#f0a0a0',
+    tag: 'culture · food · illustration · shipped',
+    prompt: `You are writing a 2–3 sentence first-person micro-story for a creative portfolio.
+Write in the voice of Mahita Maddipati. She built an app called DoRupay Dosa — a joyful app that lets you "send" a dosa to someone you're missing. She's South Indian, moved away from family, and food is her culture's love language. She hand-drew every asset in Procreate and vibe-coded the app herself.
+Tone: tender, specific, culturally grounded. No bullet points. No hashtags. No em-dashes. End with a line about presence, distance, and care.`
+  },
+  research: {
+    glyph: '∿',
+    title: 'Research',
+    color: '#a8d4f5',
+    tag: 'neural compression · dictionary learning · DSP',
+    prompt: `You are writing a 2–3 sentence first-person micro-story for a creative portfolio.
+Write in the voice of Mahita Maddipati. She does neural electrophysiology data compression research at Virginia Tech — compressing spike waveforms using dictionary learning so machines can classify neural signals efficiently. She also worked on hyperspectral satellite image compression. She sees both as the same problem: find the essential signal, discard the noise.
+Tone: precise, quietly curious, a little lyrical. No bullet points. No hashtags. No em-dashes. End with an observation about signal and noise that applies beyond research.`
+  },
+  photo: {
+    glyph: '⬡',
+    title: 'Photography',
+    color: '#b8d4a0',
+    tag: 'visual composition · light · observation',
+    prompt: `You are writing a 2–3 sentence first-person micro-story for a creative portfolio.
+Write in the voice of Mahita Maddipati. Photography was her first creative language — before design, before code. It taught her to see: negative space, light, the moment before the moment. That visual literacy now lives in every interface she builds.
+Tone: reflective, sensory, grounded. No bullet points. No hashtags. No em-dashes. End with a single line connecting photography to interface design.`
+  },
+  making: {
+    glyph: '⊕',
+    title: 'Making things exist',
+    color: '#e0b8f0',
+    tag: 'maker-first · side projects · shipped',
+    prompt: `You are writing a 2–3 sentence first-person micro-story for a creative portfolio.
+Write in the voice of Mahita Maddipati. She builds things because they don't exist yet — not because anyone assigned them. Projects include: a food gifting app (DoRupay Dosa), an AI career chatbot using RAG pipelines and LLMs (CareerCompass), geospatial incident maps from her Apple internship, and a stellar visualization from ESA data.
+Tone: energetic, self-directed, a little defiant. No bullet points. No hashtags. No em-dashes. End with a line about why making is not optional for her.`
+  }
+};
+
+const cache = {};
+let activeId = null;
+
+// ── Gemini streaming fetch ───────────────────────────────────────────────────
+async function streamGemini(prompt, onChunk, onDone) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.85, maxOutputTokens: 180 }
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gemini error ${res.status}: ${err}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let full = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') continue;
+      try {
+        const json = JSON.parse(data);
+        const chunk = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (chunk) { full += chunk; onChunk(full); }
+      } catch {}
+    }
+  }
+  onDone(full);
+}
+
+// ── Page load: generate bio ──────────────────────────────────────────────────
+async function generateBio() {
+  const el = document.getElementById('gemini-bio');
+  const bioPrompt = `Write exactly two short lines (not a couplet, just two sentences) as a poetic byline for Mahita Maddipati's portfolio.
+She is a software engineer, artist, researcher, and maker. South Indian. Moved away from home. Loves space, photography, dosas, and building things that don't exist yet.
+Rules: first person. Lyrical but not flowery. No rhyme required. No em-dashes. No hashtags. Max 25 words total across both lines. Return only the two lines, nothing else.`;
+
+  try {
+    await streamGemini(
+      bioPrompt,
+      (text) => { el.innerHTML = text + '<span class="cursor-blink"></span>'; },
+      (text) => { el.innerHTML = text; el.classList.add('loaded'); }
+    );
+  } catch (e) {
+    el.innerHTML = 'Engineer. Artist. Maker of things that needed to exist.';
+    el.classList.add('loaded');
+  }
+}
+
+// ── Star click: show panel ───────────────────────────────────────────────────
+async function showPanel(id) {
+  if (activeId) document.getElementById('star-' + activeId).classList.remove('active');
+  activeId = id;
+  document.getElementById('star-' + id).classList.add('active');
+
+  const d = stars[id];
+  const panel = document.getElementById('info-panel');
+  panel.style.opacity = '0';
+  panel.style.borderColor = d.color + '40';
+
+  await new Promise(r => setTimeout(r, 180));
+
+  panel.innerHTML = `
+    <span class="panel-glyph" style="color:${d.color}">${d.glyph}</span>
+    <p class="panel-title">${d.title}</p>
+    <p class="panel-body streaming" id="panel-body"><span class="loading-dots">thinking</span></p>
+    <span class="panel-tag" style="color:${d.color}; border-color:${d.color}40">${d.tag}</span>
+  `;
+  panel.style.opacity = '1';
+
+  const bodyEl = document.getElementById('panel-body');
+
+  if (cache[id]) {
+    bodyEl.innerHTML = cache[id];
+    bodyEl.classList.remove('streaming');
+    return;
+  }
+
+  try {
+    await streamGemini(
+      d.prompt,
+      (text) => { bodyEl.innerHTML = text + '<span class="cursor-blink"></span>'; },
+      (text) => {
+        cache[id] = text;
+        bodyEl.innerHTML = text;
+        bodyEl.classList.remove('streaming');
+      }
+    );
+  } catch (e) {
+    bodyEl.innerHTML = 'Could not reach Gemini. Check your API key in the config at the top of this file.';
+    bodyEl.classList.remove('streaming');
+  }
+}
+
+// ── Starfield background ─────────────────────────────────────────────────────
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+let stars_bg = [];
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  stars_bg = Array.from({ length: 200 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 0.9 + 0.15,
+    o: Math.random() * 0.35 + 0.05,
+    speed: Math.random() * 0.003 + 0.001,
+    phase: Math.random() * Math.PI * 2
+  }));
+}
+
+function drawStarfield(t) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  stars_bg.forEach(s => {
+    const flicker = s.o + Math.sin(t * s.speed * 60 + s.phase) * 0.1;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200,195,230,${Math.max(0, flicker)})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(drawStarfield);
+}
+
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+requestAnimationFrame(drawStarfield);
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+generateBio();
+</script>
+</body>
+</html>
